@@ -1,19 +1,28 @@
-import React,{useState} from 'react'
+import React,{useState, useEffect} from 'react'
+import { doc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { db,auth  } from "./firebase";
 
 function ToDoList() {
-    const [tasks, setTasks] = useState(["Eat breakfast", "Take Shower", "Walk The Dog"])
+    const [tasks, setTasks] = useState([])
     const [newTask, setNewTask] = useState("")
-
+    const [list, setList] = useState([])
     function handleInputChange(event){
         setNewTask(event.target.value)
     }
     function addTask(){
         if(newTask.trim()!==""){
           setTasks(t=>[...t, newTask]);
+           
           setNewTask("");
         }
-        
+               
 
+
+    }
+    const submit =()=>{
+         addDoc(collection(db, "todos"), {
+                tasks:tasks
+                 })
     }
     function deleteTask(index){
         const updatedTasks = tasks.filter((element, i)=>i !==index);
@@ -38,6 +47,24 @@ function ToDoList() {
             setTasks(updatedTasks);
         }
     }
+
+    useEffect(()=>{
+                const loadData = async () => {
+            const todos=[]
+          const q =query(collection(db, "todos"));
+           const querySnapshot = await getDocs(q);
+               querySnapshot.forEach((doc) => {
+                  todos.push({...doc.data().tasks});
+                  setList(Object.entries(todos[0]))
+               })
+              console.log(list)
+              console.log(todos[0])
+            }
+            loadData()
+                    
+              
+
+    },[])
   return (
     <div className='to-do-list'>
         <h1>To-Do List</h1>
@@ -66,6 +93,20 @@ function ToDoList() {
 
             )}
         </ol>
+        <ol>
+            {list.map((task, index)=>
+              <li key={index}>
+                <span className='text'>{task}</span>
+                <button className='delete-button' onClick={()=>deleteTask(index)}>Delete</button>
+                <button className='move-button' onClick={()=>moveTaskUp(index)}>Up</button>
+                <button className='move-button' onClick={()=>moveTaskDown(index)}>Down</button>
+
+              </li>
+
+            )}
+        </ol>
+      
+        <button onClick={submit}>Submit</button>
     </div>
   )
 }
